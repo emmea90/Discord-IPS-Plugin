@@ -33,8 +33,8 @@ class _membersync
      */
     public function onProfileUpdate( \IPS\Member $member, $changes )
     {
-        /* Determine whether group(s) has been changed */
-        if ( isset( $changes['member_group_id'] ) || isset( $changes['mgroup_others'] ) )
+        /* Determine whether group(s) has been changed, or update display name if setting is enabled */
+        if ( isset( $changes['member_group_id'] ) || isset( $changes['mgroup_others'] ) || ( \IPS\Settings::i()->discord_sync_names && isset( $changes['name'] ) ) )
         {
             try {
                 $guildMember = new \IPS\discord\Api\GuildMember;
