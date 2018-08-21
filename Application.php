@@ -32,11 +32,11 @@ class _Application extends \IPS\Application
      */
     public function installOther()
     {
-        $maxLoginOrder = \IPS\Db::i()->select( 'MAX(login_order)', 'core_login_handlers' )->first();
+        $maxLoginOrder = \IPS\Db::i()->select( 'MAX(login_order)', 'core_login_methods' )->first();
 
-        \IPS\Db::i()->insert('core_login_handlers', [
+        \IPS\Db::i()->insert('core_login_methods', [
             'login_settings' => '',
-            'login_key' => 'Discord',
+            'login_classname' => 'IPS\Login\Discord',
             'login_enabled' => 1,
             'login_order' => $maxLoginOrder + 1,
             'login_acp' => 0
@@ -64,10 +64,8 @@ class _Application extends \IPS\Application
             \IPS\FILE_PERMISSION_NO_WRITE
         );
 
-        if ( !$profileSync || !$systemLogin )
-        {
-            throw new \OutOfRangeException( 'Copying required file failed.' );
-        }
+        if ( ! $profileSync) throw new \OutOfRangeException( 'Failed to copy profile sync.' );
+        if ( ! $systemLogin) throw new \OutOfRangeException( 'Failed to copy login handler.' );
 
         \IPS\discord\Util::addAllAttributes();
     }

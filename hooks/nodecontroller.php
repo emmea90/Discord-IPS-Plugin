@@ -33,11 +33,12 @@ class discord_hook_nodecontroller extends _HOOK_CLASS_
                 $set = [
                     'login_enabled' => 0
                 ];
+
                 $where = [
-                    'login_key=?', 'Discord'
+                    'login_classname=?', 'IPS\Login\Discord'
                 ];
 
-                \IPS\Db::i()->update( 'core_login_handlers', $set, $where );
+                \IPS\Db::i()->update( 'core_login_methods', $set, $where );
             }
         }
 
