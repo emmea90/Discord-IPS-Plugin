@@ -54,23 +54,22 @@ abstract class _AbstractResponse
     {
         $response = $this->api->send();
 
-        $statusCode = (int) $response->httpResponseCode;
+        $statusCode = (int)$response->httpResponseCode;
 
-        if ( in_array( $statusCode, $this->successCodes, true ) ) {
+        if (in_array($statusCode, $this->successCodes, true)) {
+            return $response->decodeJson();
+        } else {
+            try {
+                $this->throwException($statusCode);
+            } catch (Exception\NotFoundException $e) {
+                /* Ignore not found exceptions as members can leave discord any time etc. */
+            } catch (\Exception $e) {
+                \IPS\Log::log($response->decodeJson(), 'discord_exception');
+
+                throw $e;
+            }
             return $response->decodeJson();
         }
-
-        try {
-            $this->throwException( $statusCode );
-        } catch ( Exception\NotFoundException $e ) {
-            /* Ignore not found exceptions as members can leave discord any time etc. */
-        } catch ( \Exception $e ) {
-            \IPS\Log::log( $response->decodeJson(), 'discord_exception' );
-
-            throw $e;
-        }
-
-        return $response->decodeJson();
     }
 
     /**
@@ -88,11 +87,11 @@ abstract class _AbstractResponse
      * @throws Exception\UnknownErrorException
      * @throws Exception\ServerErrorException
      */
-    protected function throwException( $statusCode )
+    protected function throwException($statusCode)
     {
-        $this->checkIfServerError( $statusCode );
+        $this->checkIfServerError($statusCode);
 
-        if ( array_key_exists( $statusCode, $this->errorCodes ) ) {
+        if (array_key_exists($statusCode, $this->errorCodes)) {
             throw new $this->errorCodes[$statusCode];
         }
 
@@ -107,12 +106,11 @@ abstract class _AbstractResponse
      * @return void
      * @throws Exception\ServerErrorException
      */
-    protected function checkIfServerError( $statusCode )
+    protected function checkIfServerError($statusCode)
     {
-        $stringStatusCode = (string) $statusCode;
+        $stringStatusCode = (string)$statusCode;
 
-        if ( $statusCode === 502 || mb_substr( $stringStatusCode, 0, 1 ) !== '5' )
-        {
+        if ($statusCode === 502 || mb_substr($stringStatusCode, 0, 1) !== '5') {
             return;
         }
 
