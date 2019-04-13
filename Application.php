@@ -18,6 +18,8 @@ namespace IPS\discord;
  * @TODO: Discord Widget.
  *
  * @TODO: Feature: Pages support. Status: BLOCKED. Reason: \IPS\cms\modules\admin\databases::form() is not extendable.
+ *
+ * @TODO: Concept of notification settings.
  * @TODO: Feature: Notifications for PMs.
  * @TODO: Feature: Notifications for watched topics.
  * @TODO: (User)Setting: Send notifications on Discord?
@@ -32,11 +34,11 @@ class _Application extends \IPS\Application
      */
     public function installOther()
     {
-        $maxLoginOrder = \IPS\Db::i()->select( 'MAX(login_order)', 'core_login_methods' )->first();
+        $maxLoginOrder = \IPS\Db::i()->select( 'MAX(login_order)', 'core_login_handlers' )->first();
 
-        \IPS\Db::i()->insert('core_login_methods', [
+        \IPS\Db::i()->insert('core_login_handlers', [
             'login_settings' => '',
-            'login_classname' => 'IPS\Login\Discord',
+            'login_key' => 'Discord',
             'login_enabled' => 1,
             'login_order' => $maxLoginOrder + 1,
             'login_acp' => 0
@@ -64,8 +66,10 @@ class _Application extends \IPS\Application
             \IPS\FILE_PERMISSION_NO_WRITE
         );
 
-        if ( ! $profileSync) throw new \OutOfRangeException( 'Failed to copy profile sync.' );
-        if ( ! $systemLogin) throw new \OutOfRangeException( 'Failed to copy login handler.' );
+        if ( !$profileSync || !$systemLogin )
+        {
+            throw new \OutOfRangeException( 'Copying required file failed.' );
+        }
 
         \IPS\discord\Util::addAllAttributes();
     }
