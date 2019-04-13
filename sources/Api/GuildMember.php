@@ -26,33 +26,31 @@ class _GuildMember extends \IPS\discord\Api\AbstractResponse
      * @param array $changes
      * @return array|NULL
      */
-    public function update( \IPS\Member $member, array $changes = [] )
+    public function update(\IPS\Member $member, array $changes = [])
     {
         /** @noinspection PhpUndefinedFieldInspection */
-        if ( !$member->is_discord_connected )
-        {
+        if (!$member->is_discord_connected) {
             return NULL;
         }
 
-        $member = $this->handleMemberChanges( $member, $changes );
-        $roles = $this->getRoleIds( $member );
+        $member = $this->handleMemberChanges($member, $changes);
+        $roles = $this->getRoleIds($member);
 
         $data['roles'] = $roles;
 
         /** @noinspection PhpUndefinedFieldInspection */
-        if ( \IPS\Settings::i()->discord_sync_names )
-        {
+        if (\IPS\Settings::i()->discord_sync_names) {
             /** @noinspection PhpUndefinedFieldInspection */
             $data['nick'] = $member->name;
         }
 
         /** @noinspection PhpUndefinedFieldInspection */
-        $this->api->setUrl( \IPS\discord\Api::API_URL )
-            ->setAuthType( \IPS\discord\Api::AUTH_TYPE_BOT )
-            ->setMember( $member )
-            ->setUri( 'guilds/{guild.id}/members/{user.id}' )
-            ->setParams( json_encode( $data ) )
-            ->setMethod( 'patch' );
+        $this->api->setUrl(\IPS\discord\Api::OAUTH2_URL)
+            ->setAuthType(\IPS\discord\Api::AUTH_TYPE_BOT)
+            ->setMember($member)
+            ->setUri('guilds/{guild.id}/members/{user.id}')
+            ->setParams(json_encode($data))
+            ->setMethod('patch');
 
         return $this->handleApi();
     }
@@ -64,16 +62,16 @@ class _GuildMember extends \IPS\discord\Api\AbstractResponse
      * @param bool $unban If true: unban, else ban
      * @return array|NULL
      */
-    public function modifyBanState( \IPS\Member $member, $unban = false )
+    public function modifyBanState(\IPS\Member $member, $unban = false)
     {
         $method = $unban ? 'delete' : 'put';
 
-        $this->api->setUrl( \IPS\discord\Api::API_URL )
-            ->setAuthType( \IPS\discord\Api::AUTH_TYPE_BOT )
-            ->setMember( $member )
-            ->setUri( 'guilds/{guild.id}/bans/{user.id}' )
+        $this->api->setUrl(\IPS\discord\Api::API_URL)
+            ->setAuthType(\IPS\discord\Api::AUTH_TYPE_BOT)
+            ->setMember($member)
+            ->setUri('guilds/{guild.id}/bans/{user.id}')
             ->setParams([])
-            ->setMethod( $method );
+            ->setMethod($method);
 
         return $this->handleApi();
     }
@@ -84,14 +82,14 @@ class _GuildMember extends \IPS\discord\Api\AbstractResponse
      * @param \IPS\Member $member
      * @return array|NULL
      */
-    public function remove( \IPS\Member $member )
+    public function remove(\IPS\Member $member)
     {
-        $this->api->setUrl( \IPS\discord\Api::API_URL )
-            ->setAuthType( \IPS\discord\Api::AUTH_TYPE_BOT )
-            ->setMember( $member )
-            ->setUri( 'guilds/{guild.id}/members/{user.id}' )
-            ->setParams( [] )
-            ->setMethod( 'delete' );
+        $this->api->setUrl(\IPS\discord\Api::API_URL)
+            ->setAuthType(\IPS\discord\Api::AUTH_TYPE_BOT)
+            ->setMember($member)
+            ->setUri('guilds/{guild.id}/members/{user.id}')
+            ->setParams([])
+            ->setMethod('delete');
 
         return $this->handleApi();
     }
@@ -102,21 +100,19 @@ class _GuildMember extends \IPS\discord\Api\AbstractResponse
      * @param \IPS\Member $member
      * @return array
      */
-    public function getRoles( \IPS\Member $member )
+    public function getRoles(\IPS\Member $member)
     {
-        $guildMember = $this->guild()->getMember( $member );
+        $guildMember = $this->guild()->getMember($member);
         $roles = $this->guild()->getRoles();
         $guildMemberRoles = [];
 
-        if ( !isset( $guildMember['roles'] ) )
-        {
+        if (!isset($guildMember['roles'])) {
             return [];
         }
 
         $roleIds = $guildMember['roles'];
 
-        foreach ( $roleIds as $roleId )
-        {
+        foreach ($roleIds as $roleId) {
             $guildMemberRoles[] = $roles[$roleId];
         }
 
@@ -132,7 +128,7 @@ class _GuildMember extends \IPS\discord\Api\AbstractResponse
     {
         /** @var \IPS\Member[] $members */
         $members = new \IPS\Patterns\ActiveRecordIterator(
-            \IPS\Db::i()->select( '*', 'core_members', ['discord_id != ? AND discord_token != ?', '0', ''] ),
+            \IPS\Db::i()->select('*', 'core_members', ['discord_id != ? AND discord_token != ?', '0', '']),
             \IPS\Member::class
         );
 
@@ -145,25 +141,22 @@ class _GuildMember extends \IPS\discord\Api\AbstractResponse
      * @param \IPS\Member $member
      * @return array
      */
-    protected function getRoleIds( \IPS\Member $member )
+    protected function getRoleIds(\IPS\Member $member)
     {
-        $currentRoles = $this->getRoles( $member );
+        $currentRoles = $this->getRoles($member);
 
         /** @noinspection PhpUndefinedFieldInspection */
-        if ( !\IPS\Settings::i()->discord_remove_unmapped )
-        {
-            $notMappedRoles = $this->role()->getNotMappedRoles( $currentRoles );
+        if (!\IPS\Settings::i()->discord_remove_unmapped) {
+            $notMappedRoles = $this->role()->getNotMappedRoles($currentRoles);
 
             /** @noinspection PhpUndefinedFieldInspection */
-            $rolesToReturn = array_merge( $notMappedRoles, $member->discord_roles );
-        }
-        else
-        {
+            $rolesToReturn = array_merge($notMappedRoles, $member->discord_roles);
+        } else {
             /** @noinspection PhpUndefinedFieldInspection */
             $rolesToReturn = $member->discord_roles;
         }
 
-        return array_values( array_filter( array_unique( $rolesToReturn ) ) );
+        return array_values(array_filter(array_unique($rolesToReturn)));
     }
 
     /**
@@ -173,22 +166,19 @@ class _GuildMember extends \IPS\discord\Api\AbstractResponse
      * @param array $changes
      * @return \IPS\Member
      */
-    protected function handleMemberChanges( \IPS\Member $member, array $changes )
+    protected function handleMemberChanges(\IPS\Member $member, array $changes)
     {
-        if ( count( $changes ) === 0 )
-        {
+        if (count($changes) === 0) {
             return $member;
         }
 
         /* Modify $member object to have correct groups */
-        if ( isset( $changes['member_group_id'] ) )
-        {
+        if (isset($changes['member_group_id'])) {
             /** @noinspection PhpUndefinedFieldInspection */
-            $member->member_group_id = (int) $changes['member_group_id'];
+            $member->member_group_id = (int)$changes['member_group_id'];
         }
 
-        if ( isset( $changes['mgroups_others'] ) )
-        {
+        if (isset($changes['mgroups_others'])) {
             /** @noinspection PhpUndefinedFieldInspection */
             $member->mgroup_others = $changes['mgroups_others'];
         }
@@ -203,8 +193,7 @@ class _GuildMember extends \IPS\discord\Api\AbstractResponse
      */
     protected function guild()
     {
-        if ( $this->guild === NULL )
-        {
+        if ($this->guild === NULL) {
             $this->guild = new \IPS\discord\Api\Guild;
         }
 
@@ -218,8 +207,7 @@ class _GuildMember extends \IPS\discord\Api\AbstractResponse
      */
     protected function role()
     {
-        if ( $this->role === NULL )
-        {
+        if ($this->role === NULL) {
             $this->role = new \IPS\discord\Api\Role;
         }
 
