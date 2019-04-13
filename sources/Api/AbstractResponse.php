@@ -50,17 +50,13 @@ abstract class _AbstractResponse
      * @return array|NULL
      * @throws \Exception
      */
-    protected function handleApi($tryingAfterRateLimit = false, $attempt = 0)
+    protected function handleApi()
     {
         $response = $this->api->send();
 
-        if ($tryingAfterRateLimit)  \IPS\Log::log( 'Attempting to retry after being rate limited. Attempt: ' . $attempt, 'discord_exception' );
+        $statusCode = (int) $response->httpResponseCode;
 
-        $statusCode = $response->httpResponseCode;
-
-        if ( in_array( $statusCode, $this->successCodes ) ) {
-            if ($tryingAfterRateLimit) \IPS\Log::log( "Request success after {$attempt} attempts", 'discord_exception' );
-            
+        if ( in_array( $statusCode, $this->successCodes, true ) ) {
             return $response->decodeJson();
         }
 
@@ -69,28 +65,6 @@ abstract class _AbstractResponse
         } catch ( Exception\NotFoundException $e ) {
             /* Ignore not found exceptions as members can leave discord any time etc. */
         } catch ( \Exception $e ) {
-            
-            // Josh Added
-            $reponseJson = $response->decodeJson();
-
-            $reponseHeaders = $response->httpHeaders;
-            
-            $maxAttempts = 5;
-
-            // Do something if rate limit  
-            if (isset($reponseHeaders['X-RateLimit-Remaining']) && $reponseHeaders['X-RateLimit-Remaining'] == 0 && $attempt <= $maxAttempts)
-            {
-                $retryAfter = $reponseJson['retry_after'] / 1000;
-
-                \IPS\Log::log( 'Rate limit hit, retrying request after ' . $retryAfter . 's', 'discord_exception' );
-                
-                sleep($retryAfter);
-
-                $attempt = $attempt + 1;
-
-                return $this->handleApi(true, $attempt);
-            }
-
             \IPS\Log::log( $response->decodeJson(), 'discord_exception' );
 
             throw $e;
@@ -112,6 +86,7 @@ abstract class _AbstractResponse
      * @throws Exception\TooManyRequestsException
      * @throws Exception\UnauthorizedException
      * @throws Exception\UnknownErrorException
+     * @throws Exception\ServerErrorException
      */
     protected function throwException( $statusCode )
     {
@@ -136,7 +111,7 @@ abstract class _AbstractResponse
     {
         $stringStatusCode = (string) $statusCode;
 
-        if ( mb_substr( $stringStatusCode, 0, 1 ) !== '5' || $statusCode === 502 )
+        if ( $statusCode === 502 || mb_substr( $stringStatusCode, 0, 1 ) !== '5' )
         {
             return;
         }

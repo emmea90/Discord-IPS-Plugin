@@ -39,7 +39,7 @@ class _Discord extends ProfileSyncAbstract
      *
      * @return	array
      */
-    protected function user(\IPS\Member $member = NULL)
+    protected function user()
     {
         if ( $this->user === NULL && $this->member->discord_token )
         {
@@ -95,38 +95,16 @@ class _Discord extends ProfileSyncAbstract
     }
 
     /**
-     * Get user's name from discord
+     * Get photo
      *
-     * @return string|NULL
+     * @return	\IPS\Http\Url|\IPS\File|NULL
      */
-    public function name()
+    public function photo()
     {
-        $user = $this->user();
-
-        if ( isset( $user['username'] ) )
-        {
-            return $user['username'];
-        }
-
-        return NULL;
-    }
-
-    /**
-	 * Get user's profile photo
-	 * May return NULL if server doesn't support this
-	 *
-	 * @param	\IPS\Member	$member	Member
-	 * @return	\IPS\Http\Url|NULL
-	 * @throws	\IPS\Login\Exception	The token is invalid and the user needs to reauthenticate
-	 * @throws	\DomainException		General error where it is safe to show a message to the user
-	 * @throws	\RuntimeException		Unexpected error from service
-	 */
-	public function photo()
-	{
         try
         {
             $user = $this->user();
-    
+
             if ( isset( $user['avatar'] ) && !empty( $user['avatar'] ) )
             {
                 return \IPS\Http\Url::external( \IPS\discord\Api::API_URL . "users/{$user['id']}/avatars/{$user['avatar']}.jpg" );
@@ -136,8 +114,24 @@ class _Discord extends ProfileSyncAbstract
         {
             \IPS\Log::log( $e, 'discord' );
         }
+
         return NULL;
-	}
+    }
+
+    /**
+     * Get name
+     *
+     * @return	string
+     */
+    public function name()
+    {
+        $user = $this->user();
+
+        if ( isset( $user['username'] ) )
+        {
+            return $user['username'];
+        }
+    }
 
     /**
      * Disassociate
@@ -146,11 +140,10 @@ class _Discord extends ProfileSyncAbstract
      */
     protected function _disassociate()
     {
-        $this->member->discord_id = NULL;
+        $this->member->discord_id = 0;
         $this->member->discord_token = NULL;
         $this->member->save();
     }
-
 
     /**
      * Get API data
